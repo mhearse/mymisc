@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Print a sorted list of passwd lines with UID >= 100
-# I was asked to code this during an interview.
-
 getent passwd | sort -n -t\: -k3 $PASSWD |
 
 while read line; do
