@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Written by: Matt Hersant
+
 getent passwd | sort -n -t\: -k3 $PASSWD |
 
 while read line; do
