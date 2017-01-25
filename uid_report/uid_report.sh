@@ -2,7 +2,7 @@
 
 # Written by: Matt Hersant
 
-getent passwd | sort -n -t\: -k3 $PASSWD |
+getent passwd | sort -n -t\: -k3 |
 
 while read line; do
     OURUID=$(echo $line | cut -f3  -d\:)
