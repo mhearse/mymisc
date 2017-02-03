@@ -3,7 +3,6 @@
 # Written by: Matt Hersant
 
 import subprocess
-from pprint import *
 
 lines = subprocess.check_output(['getent', 'passwd']).splitlines()
 
