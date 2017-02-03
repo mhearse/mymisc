@@ -3,7 +3,6 @@
 # Written by: Matt Hersant
 
 use strict;
-use Data::Dumper;
 
 my @lines = `getent passwd`;
 
