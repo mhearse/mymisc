@@ -1,1 +1,3 @@
 # mymisc
+
+For self edification.
