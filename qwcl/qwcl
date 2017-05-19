@@ -1,0 +1,62 @@
+#!/usr/bin/env perl
+
+use DBI;
+use strict;
+use Cwd 'abs_path';
+
+# Use absolute path of fname.
+my $fname = abs_path($ARGV[0]);
+my ($lineno, $curposition, $lastposition);
+
+# Establish connection to sqlite db.
+my $dbh = DBI->connect(
+    'DBI:SQLite:dbname=.qwcl.db', '', '', {
+        AutoCommit => 1,
+        RaiseError => 1,
+        sqlite_see_if_its_a_number => 1,
+    }
+) or die "$DBI::errstr\n";
+
+# Init sqlite table if needed.
+my ($res) = $dbh->selectrow_array(<<EOQ);
+    SELECT name FROM sqlite_master WHERE type='table' AND name='qwcl'
+EOQ
+
+if (!$res) {
+    print "Creating table structure\n";
+    $dbh->do(<<EOQ
+        CREATE TABLE qwcl(
+            fname TEXT,
+            lineno INT,
+            lastposition INT,
+            UNIQUE (fname)
+        )
+EOQ
+    ) or die "$DBI::errstr\n";
+}
+
+# Search table by filename.
+my $sth = $dbh->prepare(<<EOQ);
+    SELECT lineno, lastposition FROM qwcl WHERE fname = ?
+EOQ
+$sth->execute($fname);
+($lineno, $lastposition) = $sth->fetchrow_array();
+
+open FILE, $fname;
+if ($lastposition) {
+    seek(FILE, $lastposition, 0);
+    $curposition = $lastposition;
+}
+
+while (my $line = <FILE>) {
+    $lineno++;
+    $curposition = tell(FILE);
+    sleep .001
+}
+
+printf("%i %s\n", $lineno, $fname);
+
+my $sth = $dbh->prepare(<<EOQ);
+    INSERT OR REPLACE INTO qwcl VALUES (?, ?, ?)
+EOQ
+$sth->execute($fname, $lineno, $curposition) or die "$DBI::errstr\n";
