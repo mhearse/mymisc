@@ -1,31 +1,25 @@
 #!/bin/bash
 
-OURPORT=8080
-OURFIFO=/tmp/pmdirnet.fifo
+OURPORT=1682
 OURDIR=/tmp/pmdirnet
 
-if [ -p $OURFIFO ]; then
-    rm -f $OURFIFO
-fi
+lsof -Pi :$OURPORT -sTCP:LISTEN 2>&1 > /dev/null || {
+    tcpserver -c 500 -HR 0.0.0.0 $OURPORT $(readlink -f $0)
+}
 
-mkfifo $OURFIFO
+[ ! -d $OURDIR ] && mkdir $OURDIR
 
-while true
+read -r INPUT
+
+echo $INPUT | 
+while IFS= read -r METHOD KEY VALUE
 do
-    cat $OURFIFO | nc -l -p $OURPORT -N | 
-    while read -r INPUT
-    do
-        if [ ! -z $INPUT ]; then
-            echo $INPUT |
-            while IFS= read -r METHOD KEY VALUE
-            do
-                case $METHOD in
-                     put) echo $VALUE > $OURDIR/$KEY; echo "" > $OURFIFO
-                         ;;
-                     get) cat $OURDIR/$KEY > $OURFIFO
-                         ;;
-                esac
-            done
-        fi
-    done
+    DIRSUBSTR=$OURDIR/${KEY:0:4}
+    case $METHOD in
+        put) [ ! -d $DIRSUBSTR ] && mkdir $DIRSUBSTR; echo $VALUE > $DIRSUBSTR/$KEY
+            ;;
+        get) cat $DIRSUBSTR/$KEY
+            ;;
+    esac
 done
+
