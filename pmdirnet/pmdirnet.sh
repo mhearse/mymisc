@@ -5,13 +5,20 @@ OURPORT=1682
 OURDIR=/tmp/pmdirnet
 RAMDIR_SIZE=128m
 
-lsof -Pi :$OURPORT -sTCP:LISTEN 2>&1 > /dev/null || {
-    echo "Starting tcpserver: $OURIP $OURPORT"
-    tcpserver -c 500 -HR $OURIP $OURPORT $(readlink -f $0) &
+[ "$1" == "stop" ] && {
+    PIDFILE=$OURDIR/tcpserver.pid
+    [ -f $PIDFILE ] && kill $(cat $PIDFILE)
+    sudo umount $OURDIR
+    exit
 }
 
 mountpoint -q $OURDIR || {
     sudo mount -t tmpfs -o size=$RAMDIR_SIZE tmpfs $OURDIR
+}
+
+lsof -Pi :$OURPORT -sTCP:LISTEN 2>&1 > /dev/null || {
+    tcpserver -c 500 -HR $OURIP $OURPORT $(readlink -f $0) &
+    echo $! > $OURDIR/tcpserver.pid
 }
 
 [ ! -d $OURDIR ] && mkdir $OURDIR
