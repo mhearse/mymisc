@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 OURIP=0.0.0.0
 OURPORT=1682
@@ -6,13 +6,15 @@ OURDIR=/tmp/pmdirnet
 RAMDIR_SIZE=128m
 
 lsof -Pi :$OURPORT -sTCP:LISTEN 2>&1 > /dev/null || {
+    echo "Starting tcpserver: $OURIP $OURPORT"
     tcpserver -c 500 -HR $OURIP $OURPORT $(readlink -f $0) &
 }
 
-[ ! -d $OURDIR ] && mkdir $OURDIR
+mountpoint -q $OURDIR || {
+    sudo mount -t tmpfs -o size=$RAMDIR_SIZE tmpfs $OURDIR
+}
 
-# Mount ramdir
-sudo mount -t tmpfs -o size=$RAMDIR_SIZE tmpfs $OURDIR
+[ ! -d $OURDIR ] && mkdir $OURDIR
 
 read -r INPUT
 
