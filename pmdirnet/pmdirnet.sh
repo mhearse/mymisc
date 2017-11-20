@@ -4,24 +4,27 @@ OURIP=0.0.0.0
 OURPORT=1682
 OURDIR=/tmp/pmdirnet
 RAMDIR_SIZE=128m
-
-[ "$1" == "stop" ] && {
-    PIDFILE=$OURDIR/tcpserver.pid
-    [ -f $PIDFILE ] && kill $(cat $PIDFILE)
-    sudo umount $OURDIR
-    exit
-}
-
-mountpoint -q $OURDIR || {
-    sudo mount -t tmpfs -o size=$RAMDIR_SIZE tmpfs $OURDIR
-}
-
-lsof -Pi :$OURPORT -sTCP:LISTEN 2>&1 > /dev/null || {
-    tcpserver -c 500 -HR $OURIP $OURPORT $(readlink -f $0) &
-    echo $! > $OURDIR/tcpserver.pid
-}
+PIDFILE=$OURDIR/tcpserver.pid
 
 [ ! -d $OURDIR ] && mkdir $OURDIR
+
+case "$1" in
+    start)
+        mountpoint -q $OURDIR || {
+            sudo mount -t tmpfs -o size=$RAMDIR_SIZE tmpfs $OURDIR
+        }
+        lsof -Pi :$OURPORT -sTCP:LISTEN 2>&1 > /dev/null || {
+            tcpserver -c 500 -HR $OURIP $OURPORT $(readlink -f $0) &
+            echo $! > $OURDIR/tcpserver.pid
+        }
+	exit
+        ;;
+    stop)
+        [ -f $PIDFILE ] && kill -9 $(cat $PIDFILE)
+        mountpoint -q $OURDIR && sudo umount $OURDIR
+	exit
+        ;;
+esac
 
 read -r INPUT
 

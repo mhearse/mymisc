@@ -7,5 +7,5 @@ for num in {1..10000}
 do
     KEY=$(uuid)
     VAL=$(openssl rand -hex 1024)
-    echo "put$KEY$VAL" | nc $OURIP $OURPORT
+    echo "put$KEY$VAL" | nc $OURIP $OURPORT &
 done
