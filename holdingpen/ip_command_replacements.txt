@@ -1,0 +1,1036 @@
+Doug Vitale Tech Blog
+
+Deprecated Linux networking commands and their replacements
+
+In my article detailing the command line utilities available for configuring
+and troubleshooting network properties on Windows and Linux, I mentioned some
+Linux tools that, while still included and functional in many Linux
+distributions, are actually considered deprecated and therefore should be
+phased out in favor of more modern replacements.
+
+Specifically, the deprecated Linux networking commands in question are: arp,
+ifconfig, iptunnel, iwconfig, nameif, netstat, and route. These programs
+(except iwconfig) are included in the net-tools package that has been
+unmaintained for years. The functionality provided by several of these
+utilities has been reproduced and improved in the new iproute2 suite, primarily
+by using its new ip command. The iproute2 software code is available from
+Kernel.org. Iproute2 documentation is available from the Linux Foundation and
+PolicyRouting.org.
+
+┌────────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────┐
+│ Deprecated command │                                    Replacement command(s)                                    │
+├────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┤
+│arp                 │ip n (ip neighbor)                                                                            │
+├────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┤
+│ifconfig            │ip a (ip addr), ip link, ip -s (ip -stats)                                                    │
+├────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┤
+│iptunnel            │ip tunnel                                                                                     │
+├────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┤
+│iwconfig            │iw                                                                                            │
+├────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┤
+│nameif              │ip link, ifrename                                                                             │
+├────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┤
+│netstat             │ss, ip route (for netstat-r), ip -s link (for netstat -i), ip maddr (for                      │
+│                    │netstat-g)                                                                                    │
+├────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┤
+│route               │ip r (ip route)                                                                               │
+└────────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────┘
+
+.
+Now let’s take a closer look at these deprecated commands and their
+replacements.
+
+This article will not focus on iproute2 or the ip command in detail; instead it
+will simply give one-to-one mappings between the deprecated commands and their
+new counterparts. For replacement commands that are listed as ‘not apparent’,
+please contact me if you know otherwise.
+
+Jump to:
+
+  • Arp
+  • Ifconfig
+  • Iptunnel
+  • Iwconfig
+  • Nameif
+  • Netstat
+  • Route
+  • Discussion
+  • Recommended reading
+
+Please note that nslookup and dig are covered separately here.
+
+Arp
+
+┌────────────────────────────────────────────────────────────────────────────┬──────────────────────────────────────┐
+│                          Deprecated arp commands                           │             Replacement              │
+├────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────┤
+│arp -a [host] or --all [host]                                               │                                      │
+│.                                                                           │ip n (or ip neighbor), or ip n show   │
+│Shows the entries of the specified host name or IP address. If the [host]   │                                      │
+│parameter is not used, all entries will be displayed.                       │                                      │
+├────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────┤
+│                                                                            │ip n del [ip_addr] (this “invalidates”│
+│arp -d [ip_addr] or --delete [ip_addr]                                      │neighbor entries)                     │
+│.                                                                           │.                                     │
+│Removes the ARP cache entry for the specified host.                         │ip n f [ip_addr] (or ip n flush       │
+│                                                                            │[ip_addr])                            │
+├────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────┤
+│arp -D or --use-device                                                      │                                      │
+│.                                                                           │Not apparent                          │
+│Uses the hardware address associated with the specified interface.          │                                      │
+├────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────┤
+│arp -e                                                                      │                                      │
+│.                                                                           │Not apparent                          │
+│Shows the entries in default (Linux) style.                                 │                                      │
+├────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────┤
+│arp -f [filename] or --file [filename]                                      │                                      │
+│.                                                                           │                                      │
+│Similar to the -s option, only this time the address info is taken from the │Not apparent                          │
+│file that [filename] set up. If no [filename] is specified, /etc/ethers is  │                                      │
+│used as default.                                                            │                                      │
+├────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────┤
+│arp -H or --hw-type [type] or -t [type]                                     │                                      │
+│.                                                                           │                                      │
+│When setting or reading the ARP cache, this optional parameter tells arp    │Not apparent                          │
+│which class of entries it should check for. The default value of this       │                                      │
+│parameter is ether (i.e. hardware code 0x01 for IEEE 802.3 10Mbps Ethernet).│                                      │
+├────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────┤
+│arp -i [int] or --device [int]                                              │                                      │
+│.                                                                           │                                      │
+│Selects an interface. When dumping the ARP cache only entries matching the  │ip n [add | chg | del | repl] dev     │
+│specified interface will be printed. For example, arp -i eth0 -s 10.21.31.41│[name]                                │
+│A321.ABCF.321A creates a static ARP entry associating IP address 10.21.31.41│                                      │
+│with MAC address A321.ABCF.321A on eth0.                                    │                                      │
+├────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────┤
+│arp -n or --numeric                                                         │                                      │
+│.                                                                           │Not apparent                          │
+│Shows IP addresses instead of trying to determine domain names.             │                                      │
+├────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────┤
+│arp -s [ip_addr] [hw_addr] or --set [ip_addr]                               │ip n add [ip_addr] lladdr             │
+│.                                                                           │[mac_address] dev [device] nud        │
+│Manually creates a static ARP address mapping entry for host [ip_addr] with │[nud_state] (see example below)       │
+│the hardware address set to [hw_addr].                                      │                                      │
+├────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────┤
+│arp -v                                                                      │                                      │
+│.                                                                           │ip -s n (or ip -stats n)              │
+│Uses verbose mode to provide more details.                                  │                                      │
+└────────────────────────────────────────────────────────────────────────────┴──────────────────────────────────────┘
+
+.
+Some ip neighbor examples are as follows:
+
+# ip n del 10.1.2.3 dev eth0
+
+Invalidates the ARP cache entry for host 10.1.2.3 on device eth0.
+
+# ip neighbor show dev eth0
+
+Shows the ARP cache for interface eth0.
+
+# ip n add 10.1.2.3 lladdr 1:2:3:4:5:6 dev eth0 nud perm
+
+Adds a “permanent” ARP cache entry for host 10.1.2.3 device eth0. The Neighbor
+Unreachability Detection (nud) state can be one of the following:
+
+  • noarp – entry is valid. No attempts to validate this entry will be made but
+    it can be removed when its lifetime expires.
+  • permanent – entry is valid forever and can be only be removed
+    administratively.
+  • reachable – entry is valid until the reachability timeout expires.
+  • stale – entry is valid but suspicious.
+
+Ifconfig
+
+┌─────────────────────────────────────────────────────────────────────┬─────────────────────────────────────────────┐
+│                    Deprecated ifconfig commands                     │                 Replacement                 │
+├─────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ifconfig                                                             │                                             │
+│.                                                                    │ip a (or ip addr)                            │
+│Displays details on all network interfaces.                          │                                             │
+├─────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ifconfig [interface]                                                 │                                             │
+│.                                                                    │                                             │
+│The name of the interface. This is usually a driver name followed by │ip a show dev [interface]                    │
+│a unit number; for example, eth0 for the first Ethernet interface.   │                                             │
+│Eth0 will usually be a PC’s primary network interface card (NIC).    │                                             │
+├─────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ifconfig [address_family]                                            │                                             │
+│.                                                                    │ip -f [family] a                             │
+│To enable the interpretation of differing naming schemes used by     │.                                            │
+│various protocols, [address_family] is used for decoding and         │[family] can be inet (IPv4), inet6 (IPv6), or│
+│displaying all protocol addresses. Currently supported address       │link. Additionally, -4 = -f inet and -6 = -f │
+│families include inet (TCP/IP, default), inet6 (IPv6), ax25 (AMPR    │inet6.                                       │
+│Packet Radio), ddp (Appletalk Phase 2), ipx (Novell IPX) and netrom  │                                             │
+│(AMPR Packet radio).                                                 │                                             │
+├─────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ifconfig [interface] add [address/prefixlength                       │                                             │
+│.                                                                    │ip a add [ip_addr/mask] dev [interface]      │
+│Adds an IPv6 address to the [interface].                             │                                             │
+├─────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ifconfig [interface] address [address]                               │                                             │
+│.                                                                    │ip a add [ip_addr/mask] dev [interface]      │
+│Assigns the specified IP [address] to the specified [interface].     │                                             │
+├─────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ifconfig [interface] allmulti or -allmulti                           │                                             │
+│.                                                                    │ip mr iif [name] or ip mroute iif [name],    │
+│Enables or disables all-multicast mode. If selected, all multicast   │where [name] is the interface on which       │
+│packets on the network will be received by the [interface] specified.│multicast packets are received.              │
+│This enables or disables the sending of incoming frames to the       │                                             │
+│kernel’s network layer.                                              │                                             │
+├─────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ifconfig [interface] arp or -arp                                     │                                             │
+│.                                                                    │ip link set arp on or arp off                │
+│Enables or disables the use of the ARP protocol on this [interface]. │                                             │
+├─────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ifconfig [interface] broadcast [address]                             │ip a add broadcast [ip_address]              │
+│.                                                                    │.                                            │
+│Specifies the address to use to use for broadcast transmissions. By  │ip link set dev [interface] broadcast        │
+│default, the broadcast address for a subnet is the IP address with   │[mac_address] (sets the link layer broadcast │
+│all ones in the host portion of the subnet address (i.e., a.b.c.255  │address)                                     │
+│for a /24 subnet).                                                   │                                             │
+├─────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ifconfig [interface] del [address/prefixlength]                      │ip a del [ipv6_addr or ipv4_addr] dev        │
+│.                                                                    │[interface]                                  │
+│Removes an IPv6 address from the [interface], such as eth0.          │                                             │
+├─────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ifconfig [interface] down                                            │                                             │
+│.                                                                    │ip link set dev [interface] down             │
+│Disables the [interface], such as eth0.                              │                                             │
+├─────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ifconfig [interface] hw [class] [address]                            │                                             │
+│.                                                                    │                                             │
+│Sets the hardware (MAC) address of this [interface], if the device   │                                             │
+│driver supports this operation. The keyword must be followed by the  │ip link set dev [interface] address          │
+│name of the hardware [class] and the printable ASCII equivalent of   │[mac_addr]                                   │
+│the hardware address. Hardware classes currently supported include   │                                             │
+│ether (Ethernet), ax25 (AMPR AX.25), ARCnet and netrom (AMPR NET/    │                                             │
+│ROM).                                                                │                                             │
+├─────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ifconfig [interface] io_addr [address]                               │                                             │
+│.                                                                    │Not apparent; possibly ethtool.              │
+│Sets the start [address] in I/O space for this device.               │                                             │
+├─────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ifconfig [interface] irq [address]                                   │                                             │
+│.                                                                    │Not apparent; possibly ethtool.              │
+│Sets the interrupt line used by the network interface.               │                                             │
+├─────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ifconfig [interface] mem_start [address]                             │                                             │
+│.                                                                    │Not apparent; possibly ethtool.              │
+│Sets the start address for shared memory of the interface.           │                                             │
+├─────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ifconfig [interface] media [type]                                    │                                             │
+│.                                                                    │                                             │
+│Sets physical port or medium type. Examples of [type] are 10baseT,   │Not apparent; possibly ethtool.              │
+│10base2, and AUI. A [type] value of auto will tell the interface     │                                             │
+│driver to automatically determine the media type (driver support for │                                             │
+│this command varies).                                                │                                             │
+├─────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ifconfig [interface] mtu [n]                                         │                                             │
+│.                                                                    │ip link set dev [interface] mtu [n]          │
+│Sets the Maximum Transfer Unit (MTU) of an interface to [n].         │                                             │
+├─────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ifconfig [interface] multicast                                       │                                             │
+│.                                                                    │ip link set dev [interface] multicast on or  │
+│Sets the multicast flag on the interface (should not normally be     │off                                          │
+│needed as the drivers set the flag correctly themselves).            │                                             │
+├─────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ifconfig [interface] netmask [mask_address]                          │                                             │
+│.                                                                    │                                             │
+│Sets the subnet mask (not the IP address) for this [interface]. This │Not apparent                                 │
+│value defaults to the standard Class A, B, or C subnet masks (based  │                                             │
+│on the interface IP address) but can be changed with this command.   │                                             │
+├─────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ifconfig [interface] pointopoint or -pointopoint                     │not apparent; possibly ipppd [device]. The   │
+│.                                                                    │command ip a add peer [address] specifies the│
+│Enables or disables point-to-point mode on this [interface].         │address of the remote endpoint for           │
+│                                                                     │point-to-point interfaces.                   │
+├─────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ifconfig [interface] promisc or -promisc                             │                                             │
+│.                                                                    │ip link set dev [interface] promisc on or off│
+│Enables or disables promiscuous mode on the [interface].             │                                             │
+├─────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ifconfig [interface] txquelen [n]                                    │                                             │
+│.                                                                    │ip link set dev [interface] txqueuelen [n] or│
+│Sets the transmit queue length on the [interface]. Smaller values are│txqlen [n]                                   │
+│recommended for connections with high latency (i.e., dial-up modems, │                                             │
+│ISDN, etc).                                                          │                                             │
+├─────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ifconfig [interface] tunnel [address]                                │                                             │
+│.                                                                    │ip tunnel mode sit (other possible modes are │
+│Creates a Simple Internet Transition (IPv6-in-IPv4) device which     │ipip and gre).                               │
+│tunnels to the IPv4 [address] provided.                              │                                             │
+├─────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ifconfig [interface] up                                              │                                             │
+│.                                                                    │ip link set [interface] up                   │
+│Activates (enables) the [interface] specified.                       │                                             │
+└─────────────────────────────────────────────────────────────────────┴─────────────────────────────────────────────┘
+
+.
+Some examples illustrating the ip command are as follows; using the table above
+you should be able to figure out what they do.
+
+# ip link show dev eth0
+
+# ip a add 10.11.12.13/8 dev eth0
+
+# ip link set dev eth0 up
+
+# ip link set dev eth0 mtu 1500
+
+# ip link set dev eth0 address 00:70:b7:d6:cd:ef
+
+Iptunnel
+
+┌──────────────────────────────────────────────────┬────────────────────────────────────────────────────────────────┐
+│           Deprecated iptunnel commands           │                          Replacement                           │
+├──────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────┤
+│                                                  │ip tunnel a or add                                              │
+│iptunnel [add | change | del | show]              │ip tunnel chg or change                                         │
+│                                                  │ip tunnel d or del                                              │
+│                                                  │ip tunnel ls or show                                            │
+├──────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────┤
+│iptunnel add [name] [mode {ipip | gre | sit} ]    │ip tunnel add [name] [mode {ipip | gre | sit | isatap | ip6in6 |│
+│remote [remote_addr] local [local_addr]           │ipip6 | any }] remote [remote_addr] local [local_addr]          │
+├──────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────┤
+│iptunnel -V or --version                          │not apparent                                                    │
+└──────────────────────────────────────────────────┴────────────────────────────────────────────────────────────────┘
+
+.
+The syntax between iptunnel and ip tunnel is very similar as these examples
+show.
+
+# [iptunnel | ip tunnel] add ipip-tunl1 mode ipip remote 83.240.67.86 (
+ipip-tunl1 is the name of the tunnel, 83.240.67.86 is the IP address of the
+remote endpoint).
+
+# [iptunnel | ip tunnel] add ipi-tunl2 mode ipip remote 104.137.4.160 local
+104.137.4.150 ttl 1
+
+# [iptunnel | ip tunnel] add gre-tunl1 mode gre remote 192.168.22.17 local
+192.168.10.21 ttl 255
+
+Iptunnel is covered in more depth here.
+
+Iwconfig
+
+Iwconfig’s successor, iw, is still in development. Official documentation for
+iw is available here and here.
+
+┌───────────────────────────────────────────────────────────────────────────────────────┬───────────────────────────┐
+│                             Deprecated iwconfig commands                              │        Replacement        │
+├───────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────┤
+│iwconfig                                                                               │                           │
+│.                                                                                      │                           │
+│Displays basic details about wireless interfaces, such as supported protocols (        │iw dev [interface] link    │
+│802.11a/b/g/n), Extended Service Set ID (ESSID), mode, and access point. To            │                           │
+│view these details about a particular interface, use iwconfig [interface] where        │                           │
+│the interface is the device name, such as wlan0.                                       │                           │
+├───────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────┤
+│iwconfig [interface] ap [address]                                                      │                           │
+│.                                                                                      │                           │
+│Forces the wireless adapter to register with the access point given by the             │Not apparent               │
+│[address], if possible. This address is the cell identity of the access point          │                           │
+│(as reported by wireless scanning) which may be different from its MAC address.        │                           │
+├───────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────┤
+│iwconfig commit                                                                        │                           │
+│.                                                                                      │                           │
+│Some wireless adapters may not apply changes immediately (they may wait to             │Not apparent               │
+│aggregate the changes, or apply them only when the card is brought up via              │                           │
+│ifconfig). This command (when available) forces the adapter to immediately             │                           │
+│apply all pending changes.                                                             │                           │
+├───────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────┤
+│iwconfig [interface] essid [name]                                                      │                           │
+│.                                                                                      │iw [interface] connect     │
+│Connects to the WLAN with the ESSID [name] provided. With some wireless                │[name]                     │
+│adapters, you can disable the ESSID checking (ESSID promiscuous) with off or           │                           │
+│any (and on to re-enable it).                                                          │                           │
+├───────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────┤
+│iwconfig [interface] frag [num]                                                        │                           │
+│.                                                                                      │                           │
+│Sets the maximum fragment size which is always lower than the maximum packet           │                           │
+│size. This parameter may also control Frame Bursting available on some wireless        │Not apparent               │
+│adapters (the ability to send multiple IP packets together). This mechanism            │                           │
+│would be enabled if the fragment size is larger than the maximum packet size.          │                           │
+│Other valid frag parameters to auto, on, and off.                                      │                           │
+├───────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────┤
+│iwconfig [interface] [freq | channel]                                                  │iw dev [interface] set freq│
+│.                                                                                      │[freq] [HT20|HT40+|HT40-]  │
+│Sets the operating frequency or channel on the wireless device. A value below          │.                          │
+│1000 indicates a channel number, a value greater than 1000 is a frequency in           │iw dev [interface] set     │
+│Hz. You can append the suffix k, M or G to the value (for example, “2.46G” for         │channel [chan] [HT20|HT40+|│
+│2.46 GHz frequency). You may also use off or auto to let the adapter pick up           │HT40-]                     │
+│the best channel (when supported).                                                     │                           │
+├───────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────┤
+│iwconfig [interface] key [key] [mode] [on | off]                                       │                           │
+│.                                                                                      │iw [interface] connect     │
+│To set the current encryption [key], just enter the key in hex digits as               │[name] keys [key] (for WEP)│
+│XXXX-XXXX-XXXX-XXXX or XXXXXXXX. You can also enter the key as an ASCII string         │.                          │
+│by using the s: prefix. On and off re=enable and disable encryption. The               │To connect to an AP with   │
+│security mode may be open or restricted, and its meaning depends on the card           │WPA or WPA2 encryption, you│
+│used. With most cards, in open mode no authentication is used and the card may         │must use wpa_supplicant.   │
+│also accept non-encrypted sessions, whereas in restricted mode only encrypted          │                           │
+│sessions are accepted and the card will use authentication if available.               │                           │
+├───────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────┤
+│iwconfig [interface] mode [mode]                                                       │                           │
+│.                                                                                      │                           │
+│Sets the operating mode of the wireless device. The [mode] can be Ad-Hoc, Auto,        │                           │
+│Managed, Master, Monitor, Repeater, or Secondary.                                      │                           │
+│.                                                                                      │                           │
+│Ad-Hoc: the network is composed of only one cell and without an access point.          │                           │
+│Managed: the wireless node connects to a network composed of many access               │Not apparent               │
+│points, with roaming.                                                                  │                           │
+│Master: the wireless node is the synchronization master, or it acts as an              │                           │
+│access point.                                                                          │                           │
+│Monitor: the wireless node is not associated with any cell and passively               │                           │
+│monitors all packets on the frequency.                                                 │                           │
+│Repeater: the wireless node forwards packets between other wireless nodes.             │                           │
+│Secondary: the wireless node acts as a backup master/repeater.                         │                           │
+├───────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────┤
+│iwconfig [interface] modu [modulation]                                                 │                           │
+│.                                                                                      │                           │
+│Forces the wireless adapter to use a specific set of modulations. Modern               │Not apparent               │
+│adapters support various modulations, such as 802.11b or 802.11g. The list of          │                           │
+│available modulations depends on the adapter/driver and can be displayed using         │                           │
+│iwlist modulation. Some options are 11g, CCK OFDMa, and auto.                          │                           │
+├───────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────┤
+│iwconfig [interface] nick [name]                                                       │                           │
+│.                                                                                      │Not apparent               │
+│Sets the nick name (or station name).                                                  │                           │
+├───────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────┤
+│iwconfig [interface] nwid [name]                                                       │                           │
+│.                                                                                      │                           │
+│Sets the Network ID for the WLAN. This parameter is only used for pre-802.11           │Not apparent               │
+│hardware as the 802.11 protocol uses the ESSID and access point address for            │                           │
+│this function. With some wireless adapters, you can disable the Network ID             │                           │
+│checking (NWID promiscuous) with off (and on to re-enable it).                         │                           │
+├───────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────┤
+│iwconfig [interface] power [option]                                                    │                           │
+│iwconfig [interface] power min | max [secondsu | secondsm]                             │                           │
+│iwconfig [interface] power mode [mode]                                                 │                           │
+│iwconfig [interface] power on | off                                                    │Not apparent; some power   │
+│.                                                                                      │commands are:              │
+│Configures the power management scheme and mode. Valid [options] are: period           │.                          │
+│[value] (sets the period between wake ups), timeout [value] (sets the timeout          │iw dev [interface] set     │
+│before going back to sleep), saving [value] (sets the generic level of power           │power_save on              │
+│saving).                                                                               │.                          │
+│The min and max modifiers are in seconds by default, but append the suffices m         │iw dev [interface] get     │
+│or u to specify values in milliseconds or microseconds.                                │power_save                 │
+│Valid [mode] options are: all (receive all packets), unicast (receive unicast          │                           │
+│packets only, discard multicast and broadcast) and multicast (receive multicast        │                           │
+│and broadcast only, discard unicast packets).                                          │                           │
+│On and off re-enable or disable power management.                                      │                           │
+├───────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────┤
+│iwconfig [interface] rate/bit [rate]                                                   │                           │
+│.                                                                                      │                           │
+│Sets the bit rate in bits per second for cards supporting multiple bit rates.          │                           │
+│The bit-rate is the speed at which bits are transmitted over the medium, the           │                           │
+│user speed of the link is lower due to medium sharing and various                      │iw [interface] set bitrates│
+│overhead.Suffixes k, M or G can be added to the numeric [rate] (decimal                │legacy-2.4 12 18 24        │
+│multiplier : 10^3, 10^6 and 10^9 b/s), or add ‘0‘ for enough. The [rate] can           │                           │
+│also be auto to select automatic bit-rate mode (fallback to lower rate on noisy        │                           │
+│channels), or fixed to revert back to fixed setting. If you specify a bit-rate         │                           │
+│numeric value and append auto, the driver will use all bit-rates lower and             │                           │
+│equal than this value.                                                                 │                           │
+├───────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────┤
+│iwconfig [interface] retry [option] [value]                                            │                           │
+│.                                                                                      │                           │
+│To set the maximum number of retries (MAC retransmissions), enter limit [value]        │                           │
+│. To set the maximum length of time the MAC should retry, enter lifetime               │Not apparent               │
+│[value]. By default, this value is in seconds; append the suffices m or u to           │                           │
+│specify values in milliseconds or microseconds. You can also add the short,            │                           │
+│long, min and max modifiers.                                                           │                           │
+├───────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────┤
+│iwconfig [interface] rts [threshold]                                                   │                           │
+│.                                                                                      │                           │
+│Sets the size of the smallest packet for which the node sends RTS; a value             │Not apparent               │
+│equal to the maximum packet size disables the mechanism. You may also set the          │                           │
+│threshold parameter to auto, fixed or off.                                             │                           │
+├───────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────┤
+│iwconfig [interface] sens [threshold]                                                  │                           │
+│.                                                                                      │                           │
+│Sets the sensitivity threshold (defines how sensitive the wireless adapter is          │Not apparent               │
+│to poor operating conditions such as low signal, signal interference, etc).            │                           │
+│Modern adapter designs seem to control these thresholds automatically.                 │                           │
+├───────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────┤
+│iwconfig [interface] txpower [value]                                                   │iw dev [interface] set     │
+│.                                                                                      │txpower [auto | fixed | |  │
+│For adapters supporting multiple transmit powers, this sets the transmit power         │limit] [tx power in mBm]   │
+│in dBm. If W is the power in Watt, the power in dBm is P = 30 + 10.log(W). If          │.                          │
+│the [value] is postfixed by mW, it will be automatically converted to dBm. In          │iw phy [phyname] set       │
+│addition, on and off enable and disable the radio, and auto and fixed enable           │txpower [auto | fixed |    │
+│and disable power control (if those features are available).                           │limit] [tx power in mBm]   │
+├───────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────┤
+│iwconfig --help                                                                        │                           │
+│.                                                                                      │iw help                    │
+│Displays the iwconfig help message.                                                    │                           │
+├───────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────┤
+│iwconfig --version                                                                     │                           │
+│.                                                                                      │iw --version               │
+│Displays the version of iwconfig installed.                                            │                           │
+└───────────────────────────────────────────────────────────────────────────────────────┴───────────────────────────┘
+
+.
+Some examples of the iw command syntax are as follows.
+
+# iw dev wlan0 link
+
+# iw wlan0 connect CoffeeShopWLAN
+
+# iw wlan0 connect HomeWLAN keys 0:abcde d:1:0011223344 (for WEP)
+
+Nameif
+
+┌──────────────────────────────────────────────────────────────────────────────────────────┬────────────────────────┐
+│                                Deprecated nameif commands                                │      Replacement       │
+├──────────────────────────────────────────────────────────────────────────────────────────┼────────────────────────┤
+│nameif [name] [mac_address]                                                               │ip link set dev         │
+│.                                                                                         │[interface] name [name] │
+│If no name and MAC address are provided, it attempts to read addresses from /             │.                       │
+│etc/mactab. Each line of mactab should contain an interface name and MAC                  │ifrename -i [interface] │
+│address (or comments starting with #).                                                    │-n [newname]            │
+├──────────────────────────────────────────────────────────────────────────────────────────┼────────────────────────┤
+│nameif -c [config_file]                                                                   │ifrename -c             │
+│.                                                                                         │[config_file]           │
+│Reads from [config_file] instead of /etc/mactab.                                          │                        │
+├──────────────────────────────────────────────────────────────────────────────────────────┼────────────────────────┤
+│nameif -s                                                                                 │                        │
+│.                                                                                         │Not apparent            │
+│Error messages are sent to the syslog.                                                    │                        │
+└──────────────────────────────────────────────────────────────────────────────────────────┴────────────────────────┘
+
+Netstat
+
+┌────────────────────────────────────────────────────────────────────────────────────────────┬──────────────────────┐
+│                                Deprecated netstat commands                                 │     Replacement      │
+├────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+│netstat -a or --all                                                                         │                      │
+│.                                                                                           │ss -a or --all        │
+│Shows both listening and non-listening sockets.                                             │                      │
+├────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+│netstat -A [family] or --protocol=[family]                                                  │ss -f [family] or     │
+│.                                                                                           │–family=[family]      │
+│Specifies the address families for which connections are to be shown. [family]              │.                     │
+│is a comma separated list of address family keywords like inet, unix, ipx, ax25             │Families: unix, inet, │
+│, netrom, and ddp. This has the same effect as using the --inet, --unix (-x),               │inet6, link, netlink. │
+│--ipx, --ax25, --netrom, and --ddp options.                                                 │                      │
+├────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+│netstat -c or --continuous                                                                  │                      │
+│.                                                                                           │Not apparent          │
+│Configures netstat to refresh the displayed information every second until                  │                      │
+│stopped.                                                                                    │                      │
+├────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+│netstat -C                                                                                  │                      │
+│.                                                                                           │ip route list cache   │
+│Prints routing information from the route cache.                                            │                      │
+├────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+│netstat -e or --extend                                                                      │                      │
+│.                                                                                           │ss -e or --extended   │
+│Displays an increased level of detail. Can be entered as twice (as --ee) for                │                      │
+│maximum details.                                                                            │                      │
+├────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+│netstat -F                                                                                  │                      │
+│.                                                                                           │Not apparent          │
+│Prints routing information from the forward information database (FIB).                     │                      │
+├────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+│netstat -g or --groups                                                                      │ip maddr, ip maddr    │
+│.                                                                                           │show [interface]      │
+│Displays multicast group membership information for IPv4 and IPv6.                          │                      │
+├────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+│netstat -i or --interface=[name]                                                            │                      │
+│.                                                                                           │ip -s link            │
+│Displays a table of all network interfaces, or the specified [name].                        │                      │
+├────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+│netstat -l or --listening                                                                   │                      │
+│.                                                                                           │ss -l or --listening  │
+│Shows only listening sockets (which are omitted by netstat be default).                     │                      │
+├────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+│netstat -M or --masquerade                                                                  │                      │
+│.                                                                                           │Not apparent          │
+│Displays a list of masqueraded connections (connections being altered by                    │                      │
+│Network Address Translation).                                                               │                      │
+├────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+│netstat -n or --numeric                                                                     │                      │
+│.                                                                                           │ss -n or --numeric    │
+│Show numerical addresses instead of trying to determine symbolic host, port or              │                      │
+│user names (skips DNS translation).                                                         │                      │
+├────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+│netstat --numeric-hosts                                                                     │                      │
+│.                                                                                           │Not apparent          │
+│Shows numerical host addresses but does not affect the resolution of port or                │                      │
+│user names.                                                                                 │                      │
+├────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+│netstat --numeric ports                                                                     │                      │
+│.                                                                                           │Not apparent          │
+│Shows numerical port numbers but does not affect the resolution of host or user             │                      │
+│names.                                                                                      │                      │
+├────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+│netstat --numeric-users                                                                     │                      │
+│.                                                                                           │Not apparent          │
+│Shows numerical user IDs but does not affect the resolution of host or port                 │                      │
+│names.                                                                                      │                      │
+├────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+│netstat -N or --symbolic                                                                    │                      │
+│.                                                                                           │ss -r or --resolve    │
+│Displays the symbolic host, port, or user names instead of numerical                        │                      │
+│representations. Netstat does this by default.                                              │                      │
+├────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+│netstat -o or --timers                                                                      │                      │
+│.                                                                                           │ss -o or --options    │
+│Includes information related to networking timers.                                          │                      │
+├────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+│netstat -p or --program                                                                     │                      │
+│.                                                                                           │ss -p                 │
+│Shows the process ID (PID) and name of the program to which each socket                     │                      │
+│belongs.                                                                                    │                      │
+├────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+│netstat -r or --route                                                                       │ip route, ip route    │
+│.                                                                                           │show all              │
+│Shows the kernel routing tables.                                                            │                      │
+├────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+│netstat -s or --statistics                                                                  │                      │
+│.                                                                                           │ss -s                 │
+│Displays summary statistics for each protocol.                                              │                      │
+├────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+│netstat -t or --tcp                                                                         │                      │
+│.                                                                                           │ss -t or --tcp        │
+│Filters results to display TCP only.                                                        │                      │
+├────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+│netstat -T or --notrim                                                                      │                      │
+│.                                                                                           │Not apparent          │
+│Stops trimming long addresses.                                                              │                      │
+├────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+│netstat -u or --udp                                                                         │                      │
+│.                                                                                           │ss -u or --udp        │
+│Filters results to display UDP only.                                                        │                      │
+├────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+│netstat -v or --verbose                                                                     │                      │
+│.                                                                                           │Not apparent          │
+│Produces verbose output.                                                                    │                      │
+├────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+│netstat -w or --raw                                                                         │                      │
+│.                                                                                           │ss-w or --raw         │
+│Filter results to display raw sockets only.                                                 │                      │
+├────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+│netstat -Z or --context                                                                     │                      │
+│.                                                                                           │                      │
+│Prints the SELinux context if SELinux is enabled. On hosts running SELinux, all             │Not apparent          │
+│processes and files are labeled in a way that represents security-relevant                  │                      │
+│information. This information is called the SELinux context.                                │                      │
+└────────────────────────────────────────────────────────────────────────────────────────────┴──────────────────────┘
+
+Route
+
+┌────────────────────────────────────────────────────────────────┬──────────────────────────────────────────────────┐
+│                   Deprecated route commands                    │                   Replacement                    │
+├────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────┤
+│route                                                           │                                                  │
+│.                                                               │ip route                                          │
+│Displays the host’s routing tables.                             │                                                  │
+├────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────┤
+│route -A [family] [add] or route --[family] [add]               │                                                  │
+│.                                                               │ip -f [family] route                              │
+│Uses the specified address family with add or del. Valid        │.                                                 │
+│families are inet (DARPA Internet), inet6 (IPv6), ax25 (AMPR    │[family] can be inet (IP), inet6 (IPv6), or link. │
+│AX.25), netrom (AMPR NET/ROM), ipx (Novell IPX), ddp (Appletalk │Additionally, -4 = -f inet and -6 = -f inet6.     │
+│DDP), and x25 (CCITT X.25).                                     │                                                  │
+├────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────┤
+│route -C or --cache                                             │                                                  │
+│.                                                               │Not apparent; ip route show cache dumps the       │
+│Operates on the kernel’s routing cache instead of the forwarding│routing cache.                                    │
+│information base (FIB) routing table.                           │                                                  │
+├────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────┤
+│route -e or -ee                                                 │                                                  │
+│.                                                               │                                                  │
+│Uses the netstat-r format to display the routing table. -ee will│ip route show                                     │
+│generate a very long line with all parameters from the routing  │                                                  │
+│table.                                                          │                                                  │
+├────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────┤
+│route -F or --fib                                               │                                                  │
+│.                                                               │Not apparent                                      │
+│Operates on the kernel’s Forwarding Information Base (FIB)      │                                                  │
+│routing table (default behavior).                               │                                                  │
+├────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────┤
+│route -h or --help                                              │                                                  │
+│.                                                               │ip route help                                     │
+│Prints the help message.                                        │                                                  │
+├────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────┤
+│route -n                                                        │                                                  │
+│.                                                               │Not apparent                                      │
+│Shows numerical IP addresses and bypass host name resolution.   │                                                  │
+├────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────┤
+│route -v or --verbose                                           │                                                  │
+│.                                                               │ip -s route                                       │
+│Enables verbose command output.                                 │                                                  │
+├────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────┤
+│route -V or --version                                           │                                                  │
+│.                                                               │ip -V                                             │
+│Dispays the version of net-tools and the route command.         │                                                  │
+├────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────┤
+│route add or del                                                │ip route [add | chg | repl | del] [ip_addr] via   │
+│.                                                               │[ip_addr]                                         │
+│Adds or delete a route in the routing table.                    │                                                  │
+├────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────┤
+│route [add or del] dev [interface]                              │                                                  │
+│.                                                               │                                                  │
+│Associates a route with a specific device. If dev [interface] is│ip route [add | chg | repl | del] dev [interface] │
+│the last option on the command line, the word dev may be        │                                                  │
+│omitted.                                                        │                                                  │
+├────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────┤
+│route [add or del] [default] gw [gw]                            │                                                  │
+│.                                                               │ip route add default via [gw]                     │
+│Routes packets through the specified gateway IP address.        │                                                  │
+├────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────┤
+│route [add or del] -host                                        │                                                  │
+│.                                                               │Not apparent                                      │
+│Specifies that the target is a host (not a network).            │                                                  │
+├────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────┤
+│route [add or del] -irtt [n]                                    │                                                  │
+│.                                                               │Not apparent; ip route [add | chg | repl | del]   │
+│Sets the initial round trip time (IRTT) for TCP connections over│rtt [number] sets the RTT estimate; rttvar        │
+│this route to [n] milliseconds (1-12000). This is typically only│[number] sets the initial RTT variance estimate.  │
+│used on AX.25 networks. If omitted the RFC 1122 default of 300ms│                                                  │
+│is used.                                                        │                                                  │
+├────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────┤
+│route [add or del] -net                                         │                                                  │
+│.                                                               │Not apparent                                      │
+│Specifies that the target is a network (not a host).            │                                                  │
+├────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────┤
+│route [add or del] [-host or -net] netmask [mask]               │                                                  │
+│.                                                               │Not apparent                                      │
+│Sets the subnet [mask].                                         │                                                  │
+├────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────┤
+│route [add or del] metric [n]                                   │                                                  │
+│.                                                               │ip route [add | chg | repl | del] metric [number] │
+│Sets the metric field in the routing table (used by routing     │or preference [number]                            │
+│daemons) to the value of [n].                                   │                                                  │
+├────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────┤
+│route [add or del] mod, dyn, or reinstate                       │                                                  │
+│.                                                               │                                                  │
+│Install a dynamic or modified route. These flags are for        │Not apparent                                      │
+│diagnostic purposes, and are generally only set by routing      │                                                  │
+│daemons.                                                        │                                                  │
+├────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────┤
+│route [add or del] mss [bytes]                                  │ip route [add | chg | repl | del] advmss [number] │
+│.                                                               │(the MSS to advertise to these destinations when  │
+│Sets the TCP Maximum Segment Size (MSS) for connections over    │establishing TCP connections).                    │
+│this route to the number of [bytes] specified.                  │                                                  │
+├────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────┤
+│route [add or del] reject                                       │                                                  │
+│.                                                               │                                                  │
+│Installs a blocking route, which will force a route lookup to   │ip route add prohibit [network_addr]              │
+│fail. This is used to mask out networks before using the default│                                                  │
+│route. This is not intended to provide firewall functionality.  │                                                  │
+├────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────┤
+│route [add or del] window [n]                                   │                                                  │
+│.                                                               │                                                  │
+│Set the TCP window size for connections over this route to the  │ip route [add | chg | repl | del] window [W]      │
+│value of [n] bytes. This is typically only used on AX.25        │                                                  │
+│networks and with drivers unable to handle back-to-back frames. │                                                  │
+└────────────────────────────────────────────────────────────────┴──────────────────────────────────────────────────┘
+
+.
+Some examples of ip route command syntax are as follows.
+
+# ip route add 10.23.30.0/24 via 192.168.8.50
+
+# ip route del 10.28.0.0/16 via 192.168.10.50 dev eth0
+
+# ip route chg default via 192.168.25.110 dev eth1
+
+# ip route get [ip_address] (shows the interface and gateway that would be used
+to reach a remote host. This command would be especially useful for
+troubleshooting routing issues on hosts with large routing tables and/or with
+multiple network interfaces).
+
+Discussion
+
+This article and the topic of deprecated Linux networking commands has
+generated much interesting commentary on Reddit.
+
+Recommended reading
+
+If you found the content of this article helpful and want to expand your
+knowledge further, please consider buying a relevant book using the links
+below. Thanks!
+
+Linux Kernel Networking on Amazon Linux Kernel Networking Linux Network
+Internals on Amazon Linux Network Internals
+
+[51ec4ltaes] Linux Networking Cookbook  [51bme1a7l-]Linux Network
+Administrator’s Guide
+
+[41j6rxrjbl-] Linux in a Nutshell, 6th Edition Practical Guide to Linux
+Commands, Editors, and Shell Programming on Amazon Practical Guide to Linux
+Commands
+
+TCP/IP Architecture, Design and Implementation in Linux on Amazon TCP/IP
+Implementation in LinuxLinux Networking Architecture on Amazon Linux Networking
+Architecture
+
+  • The best Linux and Unix books on Amazon
+
+Advertisements
+
+Share this on:
+
+  • Email
+  • 
+  • Tweet
+  • 
+  • 
+  • More
+  • 
+
+  • Share on Tumblr
+  • 
+
+Like this:
+
+Like Loading...
+
+Related
+
+Written by Doug Vitale
+
+December 21, 2011 at 4:26 PM
+
+Posted in Computer Networking Techniques and Concepts
+
+Tagged with ip command, ip link, ip neighbor, ip route, iproute2, iwconfig,
+linux deprecated
+
+« Troubleshooting faulty network connectivity, part 2: Essential
+network commands
+Use SSH in Firefox with FireSSH »
+[amazon_ico] Amazon bookstore
+
+Pages
+
+  • About
+  • Contact
+  • Latest IT news and commentary
+
+Site search
+
+Search for: [                    ] [Search]
+
+[google_sea] Site search engine
+
+Most popular
+
+  • Deprecated Linux networking commands and their replacements
+  • Understanding and performing IPv4 subnetting
+  • Reset Windows passwords with Offline NT Password & Registry Editor
+  • Send spoofed emails with telnet
+  • Microsoft Baseline Security Analyzer
+  • Troubleshooting faulty network connectivity, part 2: Essential network
+    commands
+  • Layer 3 switches compared to routers
+
+Get networking gear
+
+Networking devices on Amazon
+
+Categories
+
+  • Commentary (6)
+  • Computer Networking Techniques and Concepts (10)
+  • Computer Networking Tools (9)
+  • Info Security or Ethical Hacking Tools (28)
+  • Useful Applications (9)
+  • Useful Web-Based Tools (5)
+  • Useful Websites (3)
+
+Browse tech books
+
+Computer and technology books on Amazon
+
+RSS
+
+RSS Feed RSS - Posts
+
+Follow blog via email
+
+Enter your email address to follow this blog and receive notifications of new
+posts by email.
+
+[                    ]
+
+[Follow]
+
+Build a custom PC
+
+Hardware computer components on Amazon
+
+↓ What’s new in Tech ↓
+
+RSS LXer Linux News
+
+  • Linux Kernel 4.14, Firefox Quantum, Fedora 27, Munich? Meh | This Week in
+    Linux 14
+  • Intel plans to end legacy BIOS support by 2020
+  • How to Install and Use TeamViewer on Linux Complete Guide
+
+RSS TechRepublic IT Security
+
+  • New Google Play Store malware highlights disturbing trend of multi-stage
+    Android attacks
+  • Out with the old: How blockchain is disrupting industries with
+    "old-fashioned" systems
+  • Video: Business cybersecurity trends to expect in 2018
+
+RSS ZDNet Zero Day
+
+  • Bug bounty hunter reveals DJI SSL, firmware keys have been public for years
+  • Oracle pushes emergency patch for critical Tuxedo server vulnerabilities
+  • Parity shakes up wallet audits, but funds remain frozen
+
+RSS TechRepublic Open Source
+
+  • Proposed Pentagon bill would see massive open source software push in 2018
+  • Microsoft: No, we don't hate open-source software, and we can prove it
+  • Apache or NGINX: Which web server is right for you?
+
+RSS ZDNet Open Source
+
+  • ​Kubernetes vendors agree on standardization
+  • ​Linux totally dominates supercomputers
+  • Red Hat Enterprise Linux for ARM arrives after seven years of development
+
+RSS Linux Today
+
+  • Tech Comics: Great Results
+  • 5 DevOps leadership priorities in 2018
+  • adcli - Easy Way To Join RHEL/CentOS System To Active Directory Domain
+
+RSS EHacking News
+
+  • Pakistani Hackers bring down Chennai customs website
+  • Forever 21's Payment Card Security System acessed
+  • Cash Converters faces massive data breach
+
+RSS NetworkWorld Security
+
+  • Docs should help design medical IoT
+  • 11% off August Smart Lock Pro With Connect Bundle - Deal Alert
+  • Forrester predicts what’s next for IoT
+
+RSS NetworkWorld LAN & WAN
+
+  • IDG Contributor Network: VeloCloud SD-WAN might be under the hood of many
+    ISPs, but it’s not the same
+  • IDG Contributor Network: 5 reasons why IT can't tame the user experience
+    for the network manager
+  • Manage user performance, not the network, with machine learning-based tools
+
+RSS ZDNet Networking
+
+  • Best gifts: 2017's top five TV media-streaming devices
+  • ​Goodbye AOL Instant Messenger
+  • ​Edge in name only: Android and iOS Edge web browser
+
+RSS Dark Reading
+
+  • Businesses Can't Tell Good Bots from Bad Bots: Report
+  • Mobile Malware Incidents Hit 100% of Businesses
+  • Tips to Protect the DNS from Data Exfiltration
+
+RSS Windows Networking
+
+  • Resolving Sysprep problems with App-X packages (Part 1)
+  • Active Directory Group Policy Health Check Items (Part 6): GPO Naming
+    Convention
+  • Building a Custom Windows 10 Image
+
+RSS Windows Security
+
+  • V2V Communications security considerations
+  • Where to (and not to) focus your security efforts
+  • Product Review: UserLock
+
+RSS InfoSec Island
+
+  • Shadow IT: The Invisible Network
+  • 4 Questions Businesses Must Ask Before Moving Identity into the Cloud
+  • Artificial Intelligence: A New Hope to Stop Multi-Stage Spear-Phishing
+    Attacks
+
+RSS SecurityWeek
+
+  • EMOTET Trojan Variant Evades Malware Analysis
+  • Group Launches Secure DNS Service Powered by IBM Threat Intelligence
+  • GitHub Warns Developers When Using Vulnerable Libraries
+
+RSS (ISC)² Blog
+
+  • Cloud Tweaks: How Certification Helps
+  • Ready, Set, Go: 5 Steps to Set Yourself Up For Certification Success
+  • Mobile Payment Systems: Disruptive Development and Cyber Risks
+
+RSS Cisco Security Blog
+
+  • Threat Round Up for Nov 10 – Nov 17
+  • TrustSec: The Cybersecurity Enforcer
+  • Cisco Email Security is Top Solution
+
+RSS Microsoft Security Response Center
+
+  • November 2017 security update release
+  • October 2017 security update release
+  • Extending the Microsoft Office Bounty Program
+
+RSS The Register – Security
+
+  • Massive US military social media spying archive left wide open in AWS S3
+    buckets
+  • Shamed TLS/SSL cert authority StartCom to shut up shop
+  • For goodness sake, stop the plod using facial recog, London mayor told
+
+RSS Internet Society
+
+  • ISOC hosts successful inaugural Indigenous Connectivity Summit
+  • Deploy360 at IETF 100, Day 5: Zaìjiàn from the Lion City
+  • One Week to IPv6, Routing Security, and More at ION Belgrade
+
+RSS CIO.com Security
+
+  • 11% off August Smart Lock Pro With Connect Bundle - Deal Alert
+  • 15% off APC 11-Outlet Surge Protector with USB Charging Ports and
+    SurgeArrest - Deal Alert
+  • IDG Contributor Network: Cybersecurity considerations for outsourcing
+    software development
+
+RSS Information Security Buzz
+
+  • Vectra 2018 Cyber Security Predictions
+  • Top 5 Predictions For ICS Security In 2018
+  • Webroot Security Predictions 2018
+
+RSS CERT Blogs
+
+  • The CERT Guide to Coordinated Vulnerability Disclosure
+  • The Consequences of Insecure Software Updates
+  • The Twisty Maze of Getting Microsoft Office Updates
+
+RSS CERT’S Security for Business Leaders (MP3)
+
+  • Becoming a CISO: Formal and Informal Requirements
+  • Global Value Chain – An Expanded View of the ICT Supply Chain
+  • Intelligence Preparation for Operational Resilience
+
+
+[amazon_ico] Amazon bookstore
+
+Create a free website or blog at WordPress.com.
+
+[                    ] Post to []
+Cancel [Reblog Post] 
+Send to Email Address [                    ] Your Name [                    ] 
+Your Email Address [                    ] [                         ]
+loading [Send Email] Cancel
+Post was not sent - check your email addresses!
+Email check failed, please try again
+Sorry, your blog cannot share posts by email.
+%d bloggers like this:
+
+[b]
