@@ -6,6 +6,17 @@ OURDIR=/tmp/pmdirnet
 RAMDIR_SIZE=128m
 PIDFILE=$OURDIR/tcpserver.pid
 
+RETVAL=""
+for req in tcpserver
+do
+    which $req > /dev/null 2>&1 || {
+        echo "Client progam needs: $req"
+        RETVAL=1
+    }
+done
+
+[ ! -z "$RETVAL" ] && exit
+
 [ ! -d $OURDIR ] && mkdir $OURDIR
 
 case "$1" in
