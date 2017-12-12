@@ -5,10 +5,16 @@ OURPORT=1682
 MAXCLIENTS=50
 MAXSLEEP=1
 
-which uuid > /dev/null 2>&1 || {
-    echo "Client progam needs uuid"
-    exit 1
-}
+RETVAL=""
+for req in uuid nc
+do
+    which $req > /dev/null 2>&1 || {
+        echo "Client progam needs: $req"
+        RETVAL=1
+    }
+done
+
+[ ! -z "$RETVAL" ] && exit
 
 for num in {1..10000}
 do
