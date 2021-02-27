@@ -45,17 +45,16 @@ $sth->execute($fname);
 open FILE, $fname;
 if ($lastposition) {
     seek(FILE, $lastposition, 0);
-    $curposition = $lastposition;
 }
 
-while (my $line = <FILE>) {
+while (<FILE>) {
     $lineno++;
-    $curposition = tell(FILE);
-    sleep .001
 }
 
 printf("%i %s\n", $lineno, $fname);
 
+seek(FILE, $curposition, 2);
+$curposition = tell();
 my $sth = $dbh->prepare(<<EOQ);
     INSERT OR REPLACE INTO qwcl VALUES (?, ?, ?)
 EOQ
